@@ -75,6 +75,87 @@ export const verifyOtp = async (req, res, next) => {
   }
 }
 
+// Customer: Login directly using name and phone (without OTP)
+export const customerLogin = async (req, res, next) => {
+  try {
+    const { name, phone } = req.body
+
+    const cleanName = typeof name === 'string' ? name.trim() : ''
+    const digits = String(phone || '').replace(/\D/g, '')
+
+    // Accept 10-digit Indian numbers or numbers with a 91 country code
+    const cleanPhone =
+      digits.length === 10
+        ? digits
+        : digits.length === 12 && digits.startsWith('91')
+          ? digits.slice(2)
+          : ''
+
+    if (!cleanName) {
+      return res.status(400).json({
+        success: false,
+        message: 'Customer name is required'
+      })
+    }
+
+    if (cleanName.length > 100) {
+      return res.status(400).json({
+        success: false,
+        message: 'Name cannot exceed 100 characters'
+      })
+    }
+
+    if (!/^[6-9]\d{9}$/.test(cleanPhone)) {
+      return res.status(400).json({
+        success: false,
+        message: 'Please enter a valid 10-digit Indian mobile number'
+      })
+    }
+
+    // Find an existing customer using their phone number
+    let user = await User.findOne({ phone: cleanPhone })
+
+    // Do not allow customer login through an admin/staff account
+    if (user && user.role !== 'customer') {
+      return res.status(403).json({
+        success: false,
+        message: 'This number cannot be used for customer login'
+      })
+    }
+
+    // Create a new customer if one does not already exist
+    if (!user) {
+      user = await User.create({
+        name: cleanName,
+        phone: cleanPhone,
+        role: 'customer',
+        isPhoneVerified: false
+      })
+    }
+
+    // Generate customer session token
+    const token = generateToken(user._id, 'customer')
+
+    return res.status(200).json({
+      success: true,
+      message: 'Login successful',
+      token,
+      user: {
+        id: user._id,
+        name: user.name,
+        phone: user.phone,
+        email: user.email,
+        role: user.role,
+        rewardPoints: user.rewardPoints,
+        completedOrdersCount: user.completedOrdersCount,
+        addresses: user.addresses
+      }
+    })
+  } catch (error) {
+    next(error)
+  }
+}
+
 // Get current customer profile
 export const getCustomerProfile = async (req, res, next) => {
   try {

@@ -1,3 +1,4 @@
+
 import React, { useState } from 'react'
 import {
   User,
@@ -5,20 +6,17 @@ import {
   MapPin,
   LogOut,
   Plus,
-  Trash2,
-  ShieldCheck
+  Trash2
 } from 'lucide-react'
 import { useAuth } from '../context/AuthContext'
 import { useToast } from '../context/ToastContext'
 import { LoyaltyWidget } from '../components/LoyaltyWidget'
-import { OtpModal } from '../components/OtpModal'
 
 export const ProfilePage = () => {
   const {
     user,
     isAuthenticated,
-    sendOtp,
-    verifyOtp,
+    loginWithPhone,
     loading,
     logout,
     addAddress,
@@ -30,9 +28,6 @@ export const ProfilePage = () => {
   // Login state
   const [phoneInput, setPhoneInput] = useState('')
   const [nameInput, setNameInput] = useState('')
-  const [otpModalOpen, setOtpModalOpen] = useState(false)
-  const [devCodeHint, setDevCodeHint] = useState(null)
-  const [sendingOtp, setSendingOtp] = useState(false)
 
   // Address form state
   const [showAddressForm, setShowAddressForm] = useState(false)
@@ -42,59 +37,27 @@ export const ProfilePage = () => {
   const [addressInstructions, setAddressInstructions] = useState('')
   const [savingAddress, setSavingAddress] = useState(false)
 
-  // Send OTP
+  // Customer login without OTP
+  const handleInitiateLogin = async (e) => {
+    e.preventDefault()
 
-const handleInitiateLogin = async (e) => {
-  e.preventDefault()
-
-  const cleanName = nameInput.trim()
-  const cleanPhone = phoneInput.replace(/\D/g, '').slice(-10)
-
-  if (!cleanName) {
-    showToast('Please enter your full name', 'error')
-    return
-  }
-
-  if (!/^[6-9]\d{9}$/.test(cleanPhone)) {
-    showToast('Please enter a valid 10-digit mobile number', 'error')
-    return
-  }
-
-  setSendingOtp(true)
-
-  try {
-    const result = await sendOtp(cleanPhone, 'login')
-
-    const devCode =
-  result?.devOtp ??
-  result?.devCode ??
-  result?.otp ??
-  result?.data?.devOtp ??
-  result?.data?.devCode ??
-  result?.data?.otp ??
-  null
-
-setDevCodeHint(devCode)
-    setOtpModalOpen(true)
-  } catch (err) {
-    console.error('OTP request failed:', err)
-  } finally {
-    setSendingOtp(false)
-  }
-}
-
-
-  // Verify OTP and log in
-  const handleVerifyOtp = async (code) => {
+    const cleanName = nameInput.trim()
     const cleanPhone = phoneInput.replace(/\D/g, '').slice(-10)
 
+    if (!cleanName) {
+      showToast('Please enter your full name', 'error')
+      return
+    }
+
+    if (!/^[6-9]\d{9}$/.test(cleanPhone)) {
+      showToast('Please enter a valid 10-digit mobile number', 'error')
+      return
+    }
+
     try {
-      await verifyOtp(cleanPhone, code, nameInput.trim())
-      setOtpModalOpen(false)
-      setDevCodeHint(null)
+      await loginWithPhone(cleanName, cleanPhone)
     } catch (err) {
-      // AuthContext displays the error toast.
-      throw err
+      console.error('Customer login failed:', err)
     }
   }
 
@@ -131,118 +94,82 @@ setDevCodeHint(devCode)
   // Login screen
   if (!isAuthenticated) {
     return (
-      <>
-        <div className="max-w-md mx-auto py-8 space-y-6">
-          <div className="bg-white p-6 md:p-8 rounded-3xl border border-stone-200/90 shadow-md space-y-5">
-            <div className="w-14 h-14 bg-amber-100 text-amber-800 rounded-2xl flex items-center justify-center mx-auto shadow-inner">
-              <User className="w-7 h-7" />
+      <div className="max-w-md mx-auto py-8 space-y-6">
+        <div className="bg-white p-6 md:p-8 rounded-3xl border border-stone-200/90 shadow-md space-y-5">
+          <div className="w-14 h-14 bg-amber-100 text-amber-800 rounded-2xl flex items-center justify-center mx-auto shadow-inner">
+            <User className="w-7 h-7" />
+          </div>
+
+          <div className="text-center space-y-1">
+            <h1 className="text-xl font-display font-extrabold text-stone-900">
+              Customer Login
+            </h1>
+            <p className="text-xs text-stone-500">
+              Enter your name and mobile number to continue.
+            </p>
+          </div>
+
+          <form onSubmit={handleInitiateLogin} className="space-y-4">
+            <div>
+              <label className="text-xs font-bold text-stone-700 block mb-1">
+                Full Name *
+              </label>
+              <input
+                type="text"
+                required
+                maxLength={100}
+                autoComplete="name"
+                placeholder="e.g. Aman Verma"
+                value={nameInput}
+                onChange={(e) => setNameInput(e.target.value)}
+                className="w-full bg-stone-50 border border-stone-200 rounded-xl px-3.5 py-2.5 text-xs text-stone-800 focus:bg-white focus:border-amber-600 outline-none transition"
+              />
             </div>
 
-            <div className="text-center space-y-1">
-              <h1 className="text-xl font-display font-extrabold text-stone-900">
-                Customer Login
-              </h1>
-              <p className="text-xs text-stone-500">
-                Enter your name and mobile number. We'll send you a verification code.
-              </p>
-            </div>
+            <div>
+              <label className="text-xs font-bold text-stone-700 block mb-1">
+                10-Digit Mobile Number *
+              </label>
 
-            <form onSubmit={handleInitiateLogin} className="space-y-4">
-              <div>
-                <label className="text-xs font-bold text-stone-700 block mb-1">
-                  Full Name *
-                </label>
+              <div className="relative">
+                <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-stone-500">
+                  +91
+                </span>
+
                 <input
-                  type="text"
+                  type="tel"
                   required
-                  autoComplete="name"
-                  placeholder="e.g. Aman Verma"
-                  value={nameInput}
-                  onChange={(e) => setNameInput(e.target.value)}
-                  className="w-full bg-stone-50 border border-stone-200 rounded-xl px-3.5 py-2.5 text-xs text-stone-800 focus:bg-white focus:border-amber-600 outline-none transition"
+                  inputMode="numeric"
+                  autoComplete="tel-national"
+                  maxLength={10}
+                  placeholder="9876543210"
+                  value={phoneInput}
+                  onChange={(e) =>
+                    setPhoneInput(e.target.value.replace(/\D/g, '').slice(0, 10))
+                  }
+                  className="w-full bg-stone-50 border border-stone-200 rounded-xl pl-12 pr-3.5 py-2.5 text-xs text-stone-800 focus:bg-white focus:border-amber-600 outline-none transition font-medium"
                 />
               </div>
-
-              <div>
-                <label className="text-xs font-bold text-stone-700 block mb-1">
-                  10-Digit Mobile Number *
-                </label>
-
-                <div className="relative">
-                  <span className="absolute left-3.5 top-1/2 -translate-y-1/2 text-xs font-bold text-stone-500">
-                    +91
-                  </span>
-
-                  <input
-                    type="tel"
-                    required
-                    inputMode="numeric"
-                    autoComplete="tel-national"
-                    maxLength={10}
-                    placeholder="9876543210"
-                    value={phoneInput}
-                    onChange={(e) =>
-                      setPhoneInput(e.target.value.replace(/\D/g, '').slice(0, 10))
-                    }
-                    className="w-full bg-stone-50 border border-stone-200 rounded-xl pl-12 pr-3.5 py-2.5 text-xs text-stone-800 focus:bg-white focus:border-amber-600 outline-none transition font-medium"
-                  />
-                </div>
-              </div>
-
-              <button
-                type="submit"
-                disabled={
-                  loading ||
-                  sendingOtp ||
-                  !nameInput.trim() ||
-                  phoneInput.length !== 10
-                }
-                className="w-full bg-amber-700 hover:bg-amber-800 disabled:opacity-50 text-white font-bold py-3 rounded-xl text-xs shadow-md transition"
-              >
-                {sendingOtp || loading
-                  ? 'Sending Verification Code...'
-                  : 'Send Verification Code'}
-              </button>
-            </form>
-
-            <div className="pt-3 border-t border-stone-100 flex items-center justify-center gap-2 text-[11px] text-stone-400">
-              <ShieldCheck className="w-3.5 h-3.5 text-amber-700" />
-              <span>Verify your mobile number to access your account.</span>
             </div>
+
+            <button
+              type="submit"
+              disabled={
+                loading ||
+                !nameInput.trim() ||
+                phoneInput.length !== 10
+              }
+              className="w-full bg-amber-700 hover:bg-amber-800 disabled:opacity-50 text-white font-bold py-3 rounded-xl text-xs shadow-md transition"
+            >
+              {loading ? 'Logging In...' : 'Continue'}
+            </button>
+          </form>
+
+          <div className="pt-3 border-t border-stone-100 text-center text-[11px] text-stone-400">
+            No verification code required.
           </div>
         </div>
-
-
-
-{otpModalOpen && (
-  <OtpModal
-    isOpen={otpModalOpen}
-    phone={phoneInput}
-    devCodeHint={devCodeHint}
-    onVerify={handleVerifyOtp}
-    onClose={() => {
-      setOtpModalOpen(false)
-      setDevCodeHint(null)
-    }}
-    onResend={async () => {
-      const cleanPhone = phoneInput.replace(/\D/g, '').slice(-10)
-      const result = await sendOtp(cleanPhone, 'login')
-
-      const devCode =
-        result?.devCode ??
-        result?.otp ??
-        result?.data?.devCode ??
-        result?.data?.otp ??
-        null
-
-      setDevCodeHint(devCode)
-      return result
-    }}
-  />
-)}
-
-
-      </>
+      </div>
     )
   }
 

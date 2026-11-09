@@ -1,3 +1,4 @@
+
 import React, { createContext, useContext, useState, useEffect, useCallback } from 'react'
 import api from '../services/api'
 import { useToast } from './ToastContext'
@@ -56,7 +57,33 @@ export const AuthProvider = ({ children }) => {
     }
   }, [admin, adminToken])
 
-  // Customer: Send OTP
+  // Customer: Direct login without OTP
+  const loginWithPhone = async (name, phone) => {
+    setLoading(true)
+    try {
+      const data = await api.post('/auth/login', {
+        name,
+        phone
+      })
+
+      if (!data.token || !data.user) {
+        throw new Error('Invalid authentication response from server')
+      }
+
+      setToken(data.token)
+      setUser(data.user)
+
+      showToast('Welcome to Siddhohum Cafe!', 'success')
+      return data
+    } catch (err) {
+      showToast(err.message || 'Login failed', 'error')
+      throw err
+    } finally {
+      setLoading(false)
+    }
+  }
+
+  // Customer: Send OTP (preserved)
   const sendOtp = async (phone, purpose = 'login') => {
     setLoading(true)
     try {
@@ -71,7 +98,7 @@ export const AuthProvider = ({ children }) => {
     }
   }
 
-  // Customer: Verify OTP and log in
+  // Customer: Verify OTP (preserved)
   const verifyOtp = async (phone, otp, name) => {
     setLoading(true)
     try {
@@ -153,7 +180,7 @@ export const AuthProvider = ({ children }) => {
     }
   }
 
-  // Admin login
+  // Admin login (unchanged)
   const adminLogin = async (phone, password) => {
     setLoading(true)
     try {
@@ -192,6 +219,7 @@ export const AuthProvider = ({ children }) => {
         loading,
         isAuthenticated: !!user && !!token,
         isAdminAuthenticated: !!admin && !!adminToken,
+        loginWithPhone,
         sendOtp,
         verifyOtp,
         refreshProfile,

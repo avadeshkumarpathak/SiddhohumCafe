@@ -1,7 +1,9 @@
+
 import express from 'express'
 import {
   sendOtp,
   verifyOtp,
+  customerLogin,
   getCustomerProfile,
   updateCustomerProfile,
   addDeliveryAddress,
@@ -14,7 +16,10 @@ import { otpLimiter } from '../middleware/rateLimiter.js'
 
 const router = express.Router()
 
-// Customer OTP & Auth
+// Customer Authentication
+router.post('/login', customerLogin)
+
+// Existing OTP routes (preserved)
 router.post('/otp/send', otpLimiter, sendOtp)
 router.post('/otp/verify', otpLimiter, verifyOtp)
 
@@ -24,7 +29,7 @@ router.put('/profile', protectCustomer, updateCustomerProfile)
 router.post('/profile/addresses', protectCustomer, addDeliveryAddress)
 router.delete('/profile/addresses/:addressId', protectCustomer, deleteDeliveryAddress)
 
-// Admin Authentication
+// Admin Authentication (unchanged)
 router.post('/admin/login', adminLogin)
 router.get('/admin/me', protectAdmin, getAdminMe)
 
