@@ -6,6 +6,7 @@ import { AuthProvider } from './context/AuthContext'
 import { CartProvider } from './context/CartContext'
 
 import { Navbar } from './components/Navbar'
+import { MobileBottomNavigation } from './components/MobileBottomNavigation'
 import { Footer } from './components/Footer'
 import { CartDrawer } from './components/CartDrawer'
 
@@ -31,7 +32,7 @@ export function App() {
               <div className="min-h-screen flex flex-col bg-[#FAF7F2] text-stone-800 antialiased selection:bg-amber-200 selection:text-amber-900">
                 <Navbar />
 
-                <main className="flex-1 max-w-6xl w-full mx-auto px-4 py-4">
+<main className="flex-1 max-w-6xl w-full mx-auto px-4 py-4 pb-24 md:pb-4">
                   <Routes>
                     {/* Customer Routes */}
                     <Route path="/" element={<HomePage />} />
@@ -53,7 +54,8 @@ export function App() {
                 </main>
 
                 <CartDrawer />
-                <Footer />
+<Footer />
+<MobileBottomNavigation />
               </div>
             </BrowserRouter>
           </CartProvider>
