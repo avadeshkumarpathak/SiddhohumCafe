@@ -196,7 +196,7 @@ window.location.href = `/orders/${orderId}`
   }
 
   return (
-    <div className="max-w-3xl mx-auto space-y-6 pb-20">
+    <div className="max-w-3xl mx-auto space-y-6 pb-32 md:pb-20">
       {/* Top Navigation */}
       <div className="flex items-center gap-2">
         <Link
@@ -360,7 +360,7 @@ window.location.href = `/orders/${orderId}`
 
         {/* Right Column: Bill Summary */}
         <div className="md:col-span-2 space-y-4">
-          <div className="bg-white p-5 rounded-3xl border border-stone-200/90 shadow-sm space-y-4 sticky top-20">
+          <div className="bg-white p-5 rounded-3xl border border-stone-200/90 shadow-sm space-y-4 md:sticky md:top-20">
             <h2 className="text-xs font-extrabold uppercase tracking-wider text-amber-900">
               Bill Summary
             </h2>
