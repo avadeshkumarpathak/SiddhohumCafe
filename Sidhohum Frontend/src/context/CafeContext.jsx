@@ -54,6 +54,7 @@ export const CafeProvider = ({ children }) => {
   })
 
   const [loading, setLoading] = useState(true)
+const [kitchenUpdating, setKitchenUpdating] = useState(false)
 
   const fetchSettings = useCallback(async () => {
     try {

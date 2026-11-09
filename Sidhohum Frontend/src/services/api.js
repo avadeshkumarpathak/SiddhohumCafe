@@ -1,3 +1,4 @@
+
 import axios from 'axios'
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '/api'
@@ -10,20 +11,31 @@ const api = axios.create({
   timeout: 15000,
 })
 
-// Request interceptor to attach JWT token
+// Attach the correct token based on the requested API route
 api.interceptors.request.use(
   (config) => {
-    // Check for customer token or admin token depending on route or priority
-    const token = localStorage.getItem('sidhohum_auth_token')
+    const url = config.url || ''
+
+    const isAdminRoute =
+      url.includes('/admin/') ||
+      url.startsWith('/settings')
+
+    const token = isAdminRoute
+      ? localStorage.getItem('sidhohum_admin_token')
+      : localStorage.getItem('sidhohum_auth_token')
+
     if (token) {
       config.headers.Authorization = `Bearer ${token}`
+    } else {
+      delete config.headers.Authorization
     }
+
     return config
   },
   (error) => Promise.reject(error)
 )
 
-// Response interceptor for clear error formatting
+// Response interceptor
 api.interceptors.response.use(
   (response) => response.data,
   (error) => {
@@ -32,8 +44,9 @@ api.interceptors.response.use(
       error.response?.data?.error ||
       error.message ||
       'An unexpected error occurred. Please try again.'
+
     error.message = message
-return Promise.reject(error)
+    return Promise.reject(error)
   }
 )
 

@@ -49,7 +49,11 @@ export const AdminDashboard = () => {
   const { admin, adminLogout, isAdminAuthenticated } = useAuth()
   const { showToast } = useToast()
   const navigate = useNavigate()
-  const { settings, toggleKitchenStatus } = useCafe()
+  const {
+  settings,
+  toggleKitchenStatus,
+  kitchenUpdating
+} = useCafe()
  
 
   const [metrics, setMetrics] = useState({
@@ -186,20 +190,39 @@ export const AdminDashboard = () => {
             
 <button
   type="button"
+  disabled={kitchenUpdating}
   onClick={async () => {
     try {
       await toggleKitchenStatus()
-    } catch {
-      alert('Unable to update kitchen status. Please try again.')
+
+      showToast(
+        settings?.isOpen
+          ? 'Kitchen is now closed'
+          : 'Kitchen is now live',
+        'success'
+      )
+    } catch (err) {
+      showToast(
+        err.message || 'Unable to update kitchen status',
+        'error'
+      )
     }
   }}
   className={`text-[10px] font-extrabold uppercase px-2 py-1 rounded-full transition ${
+    kitchenUpdating
+      ? 'opacity-50 cursor-not-allowed'
+      : 'cursor-pointer'
+  } ${
     settings?.isOpen
       ? 'bg-emerald-500 text-white'
       : 'bg-rose-500 text-white'
   }`}
 >
-  {settings?.isOpen ? 'Kitchen Live' : 'Kitchen Closed'}
+  {kitchenUpdating
+    ? 'Updating...'
+    : settings?.isOpen
+      ? 'Kitchen Live'
+      : 'Kitchen Closed'}
 </button>
 
           </div>
