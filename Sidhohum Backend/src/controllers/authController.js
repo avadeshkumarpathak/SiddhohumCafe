@@ -2,6 +2,7 @@ import jwt from 'jsonwebtoken'
 import User from '../models/User.js'
 import AdminAccount from '../models/AdminAccount.js'
 import { generateAndSendOtp, verifyOtpCode } from '../services/otpService.js'
+import Order from '../models/Order.js'
 
 const generateToken = (id, role = 'customer') => {
   return jwt.sign(
@@ -132,6 +133,26 @@ export const customerLogin = async (req, res, next) => {
         isPhoneVerified: false
       })
     }
+
+    // Link active guest orders to the customer's account
+await Order.updateMany(
+  {
+    customerId: null,
+    customerPhone: user.phone,
+    status: {
+      $in: [
+        'PLACED',
+        'ACCEPTED',
+        'PREPARING',
+        'READY',
+        'OUT_FOR_DELIVERY'
+      ]
+    }
+  },
+  {
+    $set: { customerId: user._id }
+  }
+)
 
     // Generate customer session token
     const token = generateToken(user._id, 'customer')
