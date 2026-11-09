@@ -439,11 +439,28 @@ window.location.href = `/orders/${orderId}`
               </div>
             </div>
 
+            {/* Minimum Order Warning */}
+{pricing && !pricing.minimumOrderMet && (
+  <div className="p-3 bg-amber-50 border border-amber-200 rounded-xl">
+    <p className="text-xs font-bold text-amber-900">
+      Minimum order value: ₹{pricing.minOrderAmount}
+    </p>
+    <p className="text-xs text-amber-800 mt-1">
+      Add ₹{pricing.amountRemaining} more to place your order.
+    </p>
+  </div>
+)}
+
             {/* Place Order */}
             <button
               type="button"
               onClick={handlePlaceOrder}
-              disabled={submitting || validating || !!validationError}
+              disabled={
+  submitting ||
+  validating ||
+  !!validationError ||
+  (pricing !== null && pricing.minimumOrderMet === false)
+}
               className="w-full bg-amber-600 hover:bg-amber-500 disabled:opacity-50 text-stone-950 font-bold py-3.5 rounded-2xl shadow-lg text-xs transition transform active:scale-98 flex items-center justify-center gap-2"
             >
               <Banknote className="w-4 h-4 text-stone-950" />

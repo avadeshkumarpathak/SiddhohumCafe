@@ -74,6 +74,13 @@ if (!isOpen) {
     // Always recalculate all prices, discounts, and delivery fee on server
     const totals = await calculateOrderTotals(items)
 
+    if (!totals.minimumOrderMet) {
+  return res.status(400).json({
+    success: false,
+    message: `Minimum order amount is ₹${totals.minOrderAmount}. Please add ₹${totals.amountRemaining} more to place your order.`
+  })
+}
+
     const orderNumber = await generateOrderNumber()
     const queueToken = await allocateNextQueueToken()
     const deliveryQrToken = createDeliveryQrToken()

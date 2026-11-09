@@ -67,7 +67,7 @@ const cafeSettingsSchema = new mongoose.Schema(
     },
     minOrderAmount: {
       type: Number,
-      default: 40,
+      default: 120,
       min: 0
     },
     weekdayOffer: {

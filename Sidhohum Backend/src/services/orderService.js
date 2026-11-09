@@ -94,6 +94,11 @@ export const calculateOrderTotals = async (rawItems) => {
     })
   }
 
+    // Minimum cart value validation
+  const minOrderAmount = settings.minOrderAmount ?? 120
+  const minimumOrderMet = subtotal >= minOrderAmount
+  const amountRemaining = Math.max(0, minOrderAmount - subtotal)
+
   // Weekday discount calculation
   let discount = 0
   let discountDetails = { description: '', percentage: 0, amount: 0 }
@@ -124,13 +129,16 @@ export const calculateOrderTotals = async (rawItems) => {
 
   const finalTotal = Math.max(0, subtotal - discount + deliveryFee)
 
-  return {
+    return {
     items: validatedItems,
     subtotal,
     discount,
     discountDetails,
     deliveryFee,
     finalTotal,
+    minOrderAmount,
+    minimumOrderMet,
+    amountRemaining,
     estimatedDeliveryMinutes: settings.deliveryEstimateMinutes || 10
   }
 }
