@@ -1,5 +1,6 @@
 
 import React from 'react'
+import { createPortal } from 'react-dom'
 import { useNavigate } from 'react-router-dom'
 import {
   ShoppingBag,
@@ -40,7 +41,7 @@ export const CartDrawer = () => {
     <>
       {/* Sticky Bottom Mini Bar */}
       {!isDrawerOpen && totalItemsCount > 0 && (
-        <div className="fixed bottom-0 left-0 right-0 z-40 p-3 bg-stone-900/95 backdrop-blur-md border-t border-amber-900/50 shadow-2xl animate-in slide-in-from-bottom-5">
+        <div className="fixed bottom-[calc(56px+env(safe-area-inset-bottom))] md:bottom-0 left-0 right-0 z-40 p-3 bg-stone-900/95 backdrop-blur-md border-t border-amber-900/50 shadow-2xl animate-in slide-in-from-bottom-5">
           <div className="max-w-md mx-auto flex items-center justify-between">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-xl bg-amber-500 text-stone-950 flex items-center justify-center font-extrabold shadow">
@@ -77,21 +78,23 @@ export const CartDrawer = () => {
         </div>
       )}
 
-      {/* Full Cart Drawer */}
-      {isDrawerOpen && (
-        <div className="fixed inset-0 z-50 overflow-hidden">
+      {/* Full Cart Drawer Modal */}
+      {isDrawerOpen && typeof document !== 'undefined' && createPortal((
+        <div className="fixed inset-0 z-[10000]">
+
           {/* Backdrop */}
           <div
-            className="absolute inset-0 bg-stone-950/70 backdrop-blur-sm"
+            className="absolute inset-0 bg-stone-950/70 backdrop-blur-sm transition-opacity"
             onClick={() => setIsDrawerOpen(false)}
           />
 
           {/* Drawer Container */}
-          <div className="fixed inset-0 sm:inset-y-0 sm:left-auto sm:right-0 sm:max-w-full flex">
-            <div className="absolute inset-x-0 bottom-20 top-0 sm:static sm:inset-auto sm:w-screen sm:max-w-md sm:h-full bg-[#FAF7F2] shadow-2xl flex flex-col border-l border-stone-200">
+          <div className="absolute inset-0 sm:inset-y-0 sm:left-auto sm:right-0 sm:w-full sm:max-w-md flex">
 
-              {/* Header */}
-              <div className="p-4 bg-[#381E0D] text-white flex items-center justify-between shrink-0">
+            <div className="w-full h-full bg-[#FAF7F2] shadow-2xl flex flex-col min-h-0 border-l border-stone-200">
+
+              {/* Drawer Header */}
+              <div className="shrink-0 p-4 bg-[#381E0D] text-white flex items-center justify-between">
                 <div className="flex items-center gap-2">
                   <ShoppingBag className="w-5 h-5 text-amber-400" />
 
@@ -112,8 +115,9 @@ export const CartDrawer = () => {
                 </button>
               </div>
 
-              {/* Items List */}
+              {/* Drawer Body / Items List */}
               <div className="flex-1 min-h-0 overflow-y-auto overscroll-contain p-4 space-y-3">
+
                 {itemsList.length === 0 ? (
                   <div className="text-center py-16 space-y-3">
                     <div className="w-16 h-16 bg-amber-100 text-amber-800 rounded-full flex items-center justify-center mx-auto">
@@ -175,7 +179,7 @@ export const CartDrawer = () => {
                             </div>
                           </div>
 
-                          {/* Quantity Controller */}
+                          {/* Item Quantity Controller */}
                           <div className="flex items-center gap-1.5 bg-stone-100 p-1 rounded-lg border border-stone-200">
                             <button
                               onClick={() => updateQuantity(item.menuItemId, -1)}
@@ -199,7 +203,7 @@ export const CartDrawer = () => {
                       ))}
                     </div>
 
-                    {/* Weekday Offer */}
+                    {/* Weekday Offer Banner */}
                     {estimatedDiscount > 0 && (
                       <div className="bg-emerald-50 border border-emerald-200 p-2.5 rounded-xl flex items-center gap-2 text-xs text-emerald-800">
                         <Sparkles className="w-4 h-4 text-emerald-600 shrink-0" />
@@ -214,9 +218,13 @@ export const CartDrawer = () => {
                 )}
               </div>
 
-              {/* Fixed Drawer Footer */}
+              {/* Drawer Footer / Bill Breakdown */}
               {itemsList.length > 0 && (
-                <div className="p-4 bg-white border-t border-stone-200 space-y-3 shrink-0">
+                <div
+                  className="shrink-0 p-4 bg-white border-t border-stone-200 space-y-3"
+                  style={{ paddingBottom: 'max(1rem, env(safe-area-inset-bottom, 1rem))' }}
+                >
+
                   <div className="space-y-1.5 text-xs text-stone-600">
                     <div className="flex justify-between">
                       <span>Item Subtotal</span>
@@ -269,10 +277,11 @@ export const CartDrawer = () => {
                   </button>
                 </div>
               )}
+
             </div>
           </div>
         </div>
-      )}
+      ), document.body)}
     </>
   )
 }

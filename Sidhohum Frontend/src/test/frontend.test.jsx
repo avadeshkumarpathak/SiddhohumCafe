@@ -1,11 +1,12 @@
 import React from 'react'
-import { render, screen, fireEvent } from '@testing-library/react'
-import { describe, it, expect, vi } from 'vitest'
+import { render, screen, fireEvent, within } from '@testing-library/react'
+import { describe, it, expect, vi, beforeEach } from 'vitest'
 import { BrowserRouter } from 'react-router-dom'
 import { MenuItemCard } from '../components/MenuItemCard'
 import { CategoryNav } from '../components/CategoryNav'
 import { LoyaltyWidget } from '../components/LoyaltyWidget'
-import { CartProvider, useCart } from '../context/CartContext'
+import { CartDrawer } from '../components/CartDrawer'
+import { CartProvider } from '../context/CartContext'
 import { ToastProvider } from '../context/ToastContext'
 import { CafeProvider } from '../context/CafeContext'
 import { AuthProvider } from '../context/AuthContext'
@@ -98,6 +99,152 @@ describe('Frontend Component Tests', () => {
       expect(screen.getByText(/Loyalty Rewards/i)).toBeInTheDocument()
       expect(screen.getByText(/Orders Completed|Milestone/i)).toBeInTheDocument()
       expect(screen.getByText(/Pts/i)).toBeInTheDocument()
+    })
+  })
+
+  describe('4. CartDrawer Mobile Navigation & Visibility Tests', () => {
+    beforeEach(() => {
+      localStorage.clear()
+    })
+
+    const TestCartApp = () => (
+      <>
+        <MenuItemCard item={mockDish} />
+        <CartDrawer />
+      </>
+    )
+
+    it('displays Sticky Bottom Mini Bar positioned above MobileBottomNavigation when items added', () => {
+      renderWithProviders(<TestCartApp />)
+
+      // Add item to cart
+      const addButton = screen.getByText('ADD')
+      fireEvent.click(addButton)
+
+      // Sticky Bottom Mini Bar should appear
+      expect(screen.getByText(/1 item in Cart/i)).toBeInTheDocument()
+      expect(screen.getByText('View Cart')).toBeInTheDocument()
+
+      // Check mobile bottom offset to sit above MobileBottomNavigation
+      const stickyBar = screen.getByText('View Cart').closest('.fixed')
+      expect(stickyBar).toBeInTheDocument()
+      expect(stickyBar.className).toContain('bottom-[calc(56px+env(safe-area-inset-bottom))]')
+      expect(stickyBar.className).toContain('md:bottom-0')
+    })
+
+    it('opens Full Cart Drawer in portal above all elements, occupies viewport height, and supports quantity controls', () => {
+      renderWithProviders(<TestCartApp />)
+
+      // Add item and open cart
+      const addButton = screen.getByText('ADD')
+      fireEvent.click(addButton)
+
+      const viewCartButton = screen.getByText('View Cart')
+      fireEvent.click(viewCartButton)
+
+      // Verify portal modal renders above all UI elements with z-[10000]
+      const modalBackdrop = document.querySelector('.bg-stone-950\\/70')
+      expect(modalBackdrop).toBeInTheDocument()
+
+      const modalWrapper = modalBackdrop.parentElement
+      expect(modalWrapper.className).toContain('z-[10000]')
+      expect(modalWrapper.className).toContain('fixed')
+      expect(modalWrapper.className).toContain('inset-0')
+
+      // Drawer container must occupy full viewport on mobile (inset-0) and right-drawer on desktop
+      const drawerContainer = modalWrapper.querySelector('.inset-0.sm\\:inset-y-0')
+      expect(drawerContainer).toBeInTheDocument()
+
+      const drawerPanel = modalWrapper.querySelector('.bg-\\[\\#FAF7F2\\]')
+      expect(drawerPanel).toBeInTheDocument()
+
+      // Header remains visible
+      expect(within(drawerPanel).getByText('Your Cart')).toBeInTheDocument()
+
+      // Item in list
+      expect(within(drawerPanel).getByText('Midnight Himalayan Chai')).toBeInTheDocument()
+
+      // Bill breakdown & Proceed to Checkout button visible
+      expect(within(drawerPanel).getByText('Proceed to Checkout')).toBeInTheDocument()
+      expect(within(drawerPanel).getByText('Item Subtotal')).toBeInTheDocument()
+      expect(within(drawerPanel).getByText('To Pay')).toBeInTheDocument()
+
+      // Quantity controls test inside drawer: increase to 2
+      const itemRow = within(drawerPanel).getByText('Midnight Himalayan Chai').closest('.bg-white')
+      const incrementBtn = itemRow.querySelector('.bg-amber-700')
+      fireEvent.click(incrementBtn)
+
+      // Subtotal and item total should now reflect 2 items (2 * 40 = 80)
+      expect(within(drawerPanel).getAllByText('₹80').length).toBeGreaterThanOrEqual(1)
+
+      // Clear cart
+      const clearBtn = within(drawerPanel).getByText('Clear Cart')
+      fireEvent.click(clearBtn)
+      expect(within(drawerPanel).getByText('Your cart is empty')).toBeInTheDocument()
+
+      // Close drawer via header close button
+      const headerCloseBtn = drawerPanel.querySelector('button')
+      fireEvent.click(headerCloseBtn)
+    })
+
+    it('handles many items with independent scrolling, bill calculation, and accessible checkout button', () => {
+      // Create multi-item scenario
+      const manyDishes = Array.from({ length: 8 }, (_, idx) => ({
+        _id: `dish-multi-${idx}`,
+        name: `Special Artisan Drink #${idx + 1}`,
+        price: 50 + idx * 10,
+        isVeg: true,
+        isAvailable: true
+      }))
+
+      const MultiItemApp = () => (
+        <>
+          {manyDishes.map((dish) => (
+            <MenuItemCard key={dish._id} item={dish} />
+          ))}
+          <CartDrawer />
+        </>
+      )
+
+      renderWithProviders(<MultiItemApp />)
+
+      // Add all 8 dishes to cart
+      const addButtons = screen.getAllByText('ADD')
+      addButtons.forEach((btn) => fireEvent.click(btn))
+
+      // Open Cart
+      const viewCartBtn = screen.getByText('View Cart')
+      fireEvent.click(viewCartBtn)
+
+      // Get drawer elements
+      const drawerPanel = document.querySelector('.bg-\\[\\#FAF7F2\\]')
+      expect(drawerPanel).toBeInTheDocument()
+
+      // Header remains visible
+      const header = drawerPanel.querySelector('.shrink-0.bg-\\[\\#381E0D\\]')
+      expect(header).toBeInTheDocument()
+
+      // Scrollable list container must have overflow-y-auto, flex-1, min-h-0
+      const scrollableList = drawerPanel.querySelector('.overflow-y-auto')
+      expect(scrollableList).toBeInTheDocument()
+      expect(scrollableList.className).toContain('flex-1')
+      expect(scrollableList.className).toContain('min-h-0')
+
+      // All 8 items are rendered inside the scrollable list
+      manyDishes.forEach((dish) => {
+        expect(within(scrollableList).getByText(dish.name)).toBeInTheDocument()
+      })
+
+      // Footer is shrink-0 and remains visible with Proceed to Checkout button
+      const footer = drawerPanel.querySelector('.shrink-0.bg-white')
+      expect(footer).toBeInTheDocument()
+
+      const checkoutBtn = within(footer).getByText('Proceed to Checkout')
+      expect(checkoutBtn).toBeInTheDocument()
+
+      // Click Proceed to Checkout closes the drawer
+      fireEvent.click(checkoutBtn)
+      expect(drawerPanel).not.toBeInTheDocument()
     })
   })
 })
